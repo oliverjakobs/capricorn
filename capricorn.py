@@ -19,6 +19,7 @@ class CapricornMenu(tk.Menu):
         menu_file.add_command(label="New File", accelerator="Ctrl+N", command=master.new_file)
         menu_file.add_separator()
         menu_file.add_command(label="Open File", accelerator="Ctrl+T", command=master.open_file)
+        menu_file.add_command(label="Open Folder", accelerator="Ctrl+Shift+T", command=master.open_folder)
         menu_file.add_separator()
         menu_file.add_command(label="Save", accelerator="Ctrl+S", command=master.save)
         menu_file.add_command(label="Save As", accelerator="Ctrl+Shift+S", command=master.save_as)
@@ -88,9 +89,7 @@ class Capricorn(tk.Tk):
 
         theme_dir = config.get('Theme', 'dir', fallback=None)
         theme_name = config.get('Theme', 'name', fallback=None)
-        location = os.getcwd()
-        token = dict(config['Token']) if 'Token' in config.sections() else {}
-
+        
         # setup
         self.title("Capricorn")
         self.geometry("1200x800")
@@ -110,7 +109,9 @@ class Capricorn(tk.Tk):
         self.config(menu=self.menu)
 
         # workspace
-        self.workspace = Workspace(self, location, token, style=self.style, orient=tk.HORIZONTAL)
+        self.location = os.getcwd()
+        self.token = dict(config['Token']) if 'Token' in config.sections() else {}
+        self.workspace = Workspace(self, self.location, self.token, style=self.style, orient=tk.HORIZONTAL)
         self.workspace.grid(row=0, column=0, sticky=tk.NSEW)
 
         # status bar
@@ -143,6 +144,18 @@ class Capricorn(tk.Tk):
                 self.statusbar.write("[Error]: Failed to open {0}".format(filename))
             else:
                 self.statusbar.write("Open {0}".format(filename))
+
+    def open_folder(self, *args):
+        foldername = filedialog.askdirectory() #No file extention options need to be passed while opening folders
+        newlocation = foldername
+        if foldername==self.location:
+            self.statusbar.write("{0} already open".format(foldername))
+        else:
+            self.workspace.destroy()
+            self.location=newlocation
+            self.workspace = Workspace(self, newlocation, self.token, style=self.style, orient=tk.HORIZONTAL)
+            self.workspace.grid(row=0, column=0, sticky=tk.NSEW)   
+            self.statusbar.write("Opened {0}".format(foldername))  
 
     def save(self, *args):
         result, filename = self.workspace.save_tab()
